@@ -1,0 +1,7 @@
+openai
+dotenv
+PyYAML
+requests
+aiohttp
+Pillow
+ipython
