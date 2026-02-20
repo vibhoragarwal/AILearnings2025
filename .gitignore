@@ -1,0 +1,105 @@
+cdk.context.json
+cdk.out/
+
+# -------------------------------------------------------------------
+# 1. DEPENDENCY DIRECTORIES
+# -------------------------------------------------------------------
+# Node.js dependencies (React/Front-end)
+/node_modules
+/jspm_packages
+
+# Python dependencies
+# Virtual environment (common naming conventions)
+/venv
+/.venv
+/env
+/bin/
+/include/
+/lib/
+/lib64/
+
+# Java/Maven dependencies
+/target/
+target/
+/bin/
+/out/
+
+# -------------------------------------------------------------------
+# 2. BUILD & COMPILE ARTIFACTS
+# -------------------------------------------------------------------
+# Python
+*.pyc
+__pycache__/
+*.pyd
+*.so
+
+# React/JavaScript
+/build
+/dist
+/public/build
+/esnext
+/coverage
+/temp
+
+# Java/Maven/Gradle
+# Maven build directories (the `target` is already excluded above)
+*.class
+*.jar
+*.war
+*.ear
+*.zip
+*.tar.gz
+# Log and history files
+*.log
+*.history
+.classpath
+.project
+
+# -------------------------------------------------------------------
+# 3. CONFIGURATION & ENVIRONMENT FILES
+# -------------------------------------------------------------------
+# Environment variables (sensitive data)
+.env
+.env.*
+.env.local
+.DS_Store
+
+# Package locks and cache
+package-lock.json
+npm-debug.log*
+yarn.lock
+.npm
+.yarn
+
+# -------------------------------------------------------------------
+# 4. IDE & EDITOR SPECIFIC FILES
+# -------------------------------------------------------------------
+# VS Code
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.history
+
+# JetBrains IDEs (IntelliJ, PyCharm, WebStorm, etc.)
+# .idea directory (unless you want to share specific run configs)
+.idea/
+*.iws
+*.iml
+*.ipr
+
+# Eclipse
+.project
+.classpath
+.settings/
+/bin/
+
+# NetBeans
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.cachedir/
+# *Comment out the next line if you need to commit the NetBeans project file*
+/nbproject/

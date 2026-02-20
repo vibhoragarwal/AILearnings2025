@@ -1,0 +1,10 @@
+#PySpark (The Engine): It provides the computational power. It takes a massive task, breaks it into tiny pieces,
+#and distributes them across multiple CPU cores or even multiple servers (clusters).
+
+#Delta Lake (The Management): It provides the reliability. It sits on top of your storage to ensure
+#that your distributed processing doesn't result in "half-finished" or corrupt data. It’s the safety net for the engine.
+
+pandas
+pyarrow
+pyspark==3.5.0
+delta-spark==3.0.0
