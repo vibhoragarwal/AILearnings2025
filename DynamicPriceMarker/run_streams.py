@@ -1,45 +1,42 @@
 from delta import DeltaTable
 from pyspark.sql import functions as F
 
-from DynamicPriceMarker.config.s3 import create_s3_folder, BUCKET_NAME
-from DynamicPriceMarker.config.utils import get_market_schema, get_spark
+from DynamicPriceMarker.config.spark_config import get_market_schema, get_spark
+from foundation.utils.featurebroker import FeatureBroker
+from init_structures import init_table_structures
 
-S3_BUCKET = f"s3a://{BUCKET_NAME}"
-
-# Define S3 Paths
-# Notice we use 's3a://' instead of 'os.path.join' for local folders
-raw_market_alerts = f"{S3_BUCKET}/ingestion/raw_market_alerts/"
-bronze_checkpoint_path = f"{S3_BUCKET}/ingestion/checkpoints/bronze/"
-bronze_market_history = f"{S3_BUCKET}/ingestion/bronze_market_history/"
-silver_path = f"{S3_BUCKET}/ingestion/silver_market_prices/"
-silver_checkpoint = f"{S3_BUCKET}/ingestion/checkpoints/silver"
-
-create_s3_folder(BUCKET_NAME, "ingestion/silver_market_prices/")
-create_s3_folder(BUCKET_NAME, "ingestion/checkpoints/silver")
-create_s3_folder(BUCKET_NAME, "ingestion/raw_market_alerts/")
-create_s3_folder(BUCKET_NAME, "ingestion/checkpoints/bronze/")
-create_s3_folder(BUCKET_NAME, "ingestion/bronze_market_history/")
+from lambda_api.setup_env import update_environment
+update_environment()
 
 spark = get_spark()
 market_schema = get_market_schema()
+init_table_structures(spark, market_schema)
 
-# 1. Read the Raw Data
-raw_data_stream = spark.readStream \
-    .schema(market_schema) \
-    .json(raw_market_alerts)
+
+
+if FeatureBroker.DataBricks:
+    print("Running in Databricks: Using Auto Loader (cloudFiles)")
+    raw_data_stream = spark.readStream \
+        .format("cloudFiles") \
+        .option("cloudFiles.format", "json") \
+        .option("cloudFiles.schemaLocation", FeatureBroker.bronze_checkpoint_path) \
+        .schema(market_schema) \
+        .load(FeatureBroker.raw_market_alerts_path)
+else:
+    print("Running Locally: Using standard JSON reader")
+    raw_data_stream = spark.readStream \
+        .format("json") \
+        .schema(market_schema) \
+        .load(FeatureBroker.raw_market_alerts_path)
 
 # check the folder every 5 seconds.
 bronze_stream = raw_data_stream.writeStream \
     .format("delta") \
-    .option("checkpointLocation", bronze_checkpoint_path) \
+    .option("checkpointLocation", FeatureBroker.bronze_checkpoint_path) \
     .outputMode("append") \
-    .trigger(processingTime='25 seconds') \
-    .start(bronze_market_history)
+    .trigger(processingTime='5 seconds') \
+    .start(FeatureBroker.bronze_market_history_path)
 
-
-
-if not DeltaTable.isDeltaTable(spark, silver_path):
-    spark.createDataFrame([], market_schema).write.format("delta").save(silver_path)
 
 
 # 3. The Upsert Function
@@ -61,7 +58,7 @@ def upsert_to_silver(batch_df, batch_id):
         .dropDuplicates(["item_name", "competitor_name"])
 
     # This function runs for every micro-batch
-    silver_table = DeltaTable.forPath(spark, silver_path)
+    silver_table = DeltaTable.forPath(spark, FeatureBroker.silver_market_prices_path)
 
     silver_table.alias("target").merge(
         deduped_df.alias("source"),
@@ -72,24 +69,24 @@ def upsert_to_silver(batch_df, batch_id):
     }).whenNotMatchedInsertAll() \
         .execute()
 
-    silver_df = spark.read.format("delta").load(silver_path)
+    silver_df = spark.read.format("delta").load(FeatureBroker.silver_market_prices_path)
 
     # 3. Sort by item and show the results
     print("--- Current Silver 'Master' Prices ---")
     silver_df.orderBy("item_name").show()
 
 
-print(f"Starting Silver Stream reading from: {bronze_market_history}")
+print(f"Starting Silver Stream reading from: {FeatureBroker.bronze_market_history_path}")
 # 4. Start the Stream from Bronze to Silver
 # We read FROM the Bronze Delta path
-bronze_stream = spark.readStream.format("delta").load(bronze_market_history)
+bronze_reader_stream = spark.readStream.format("delta").load(FeatureBroker.bronze_market_history_path)
 
-silver_query = bronze_stream.writeStream \
+silver_query = bronze_reader_stream.writeStream \
     .foreachBatch(upsert_to_silver) \
-    .option("checkpointLocation", silver_checkpoint) \
+    .option("checkpointLocation", FeatureBroker.silver_checkpoint_path) \
     .start()
 
-print(f"Streams started! Drop JSON files into {raw_market_alerts} to see the magic...")
+print(f"Streams started! Drop JSON files into {FeatureBroker.raw_market_alerts_path} to see the magic...")
 
 # Keep the processes alive
 spark.streams.awaitAnyTermination()

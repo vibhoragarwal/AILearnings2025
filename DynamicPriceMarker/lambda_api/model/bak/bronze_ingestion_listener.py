@@ -1,5 +1,5 @@
 from DynamicPriceMarker.config.s3 import create_s3_folder, BUCKET_NAME
-from DynamicPriceMarker.config.utils import get_spark, get_market_schema
+from DynamicPriceMarker.config.spark_config import get_spark, get_market_schema
 
 S3_BUCKET = f"s3a://{BUCKET_NAME}"
 

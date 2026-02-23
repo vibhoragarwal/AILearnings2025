@@ -7,6 +7,11 @@ import json
 import logging
 import os
 
+
+from dotenv import load_dotenv
+
+load_dotenv()
+
 from foundation.aws_lambda.bearingdatabase import BearingDatabase
 from foundation.aws_lambda.s3 import S3Wrapper
 from foundation.aws_lambda.sns import SNSWrapper
@@ -18,7 +23,7 @@ from foundation.stub.mocksqs import MockSQS
 from foundation.utils.featurebroker import FeatureBroker
 
 # Get log level from environment variable
-SERVICE_NAME = "msme-price-alerts"
+SERVICE_NAME = "dynamic-price-marker"
 FeatureBroker.register("ServiceName", SERVICE_NAME)
 mock = os.environ.get("NEST_MOCK", [])
 if mock in ["all", "aws"]:
@@ -50,6 +55,38 @@ if loglevel_string:
 user = os.environ.get("USER", "jenkins")
 
 
+def configure_spark_for_s3():
+    # Define S3 Paths
+    # Notice we use 's3a://' instead of 'os.path.join' for local folders
+  # hadoop-aws allows Spark to use 's3a://'
+    hadoop_s3_path = f"s3a://{FeatureBroker.Bucket}"
+
+    raw_market_alerts_path = "ingestion/raw_market_alerts/"
+    bronze_market_history_path = "ingestion/bronze_market_history/"
+    bronze_checkpoint_path = "ingestion/checkpoints/bronze/"
+    silver_checkpoint_path = "ingestion/checkpoints/silver/"
+    silver_market_prices_path = "ingestion/silver_market_prices/"
+    gold_pricing_decisions_path = "ingestion/gold_pricing_decisions/"
+
+    FeatureBroker.register("raw_market_alerts_path",  os.path.join(hadoop_s3_path, raw_market_alerts_path))
+    FeatureBroker.register("bronze_market_history_path", os.path.join(hadoop_s3_path, bronze_market_history_path))
+    FeatureBroker.register("bronze_checkpoint_path", os.path.join(hadoop_s3_path, bronze_checkpoint_path))
+    FeatureBroker.register("silver_checkpoint_path", os.path.join(hadoop_s3_path, silver_checkpoint_path))
+    FeatureBroker.register("silver_market_prices_path", os.path.join(hadoop_s3_path, silver_market_prices_path))
+    FeatureBroker.register("gold_pricing_decisions_path", os.path.join(hadoop_s3_path, gold_pricing_decisions_path))
+
+
+    FeatureBroker.S3.create_s3_folder(raw_market_alerts_path)
+    FeatureBroker.S3.create_s3_folder(bronze_market_history_path)
+    FeatureBroker.S3.create_s3_folder(bronze_checkpoint_path)
+    FeatureBroker.S3.create_s3_folder(silver_checkpoint_path)
+    FeatureBroker.S3.create_s3_folder(silver_market_prices_path)
+    FeatureBroker.S3.create_s3_folder(gold_pricing_decisions_path)
+
+def setup_is_databricks():
+    is_databricks = "DATABRICKS_RUNTIME_VERSION" in os.environ
+    FeatureBroker.register("DataBricks", is_databricks)
+
 def setup_s3():
     """Setup S3 storage location"""
     # pylint: disable=invalid-name
@@ -59,7 +96,7 @@ def setup_s3():
         s3 = MockS3Wrapper(
             {
                 "bucket": os.environ.get(
-                    "NEST_OUTPUT_BUCKET", f"va-databricks-learn-1"
+                    "NEST_OUTPUT_BUCKET", "va-databricks-learn-1"
                 ),
                 "path": os.environ.get("NEST_MOCK_S3_PATH", "/tmp/s3"),
                 "container_id": os.environ.get("NEST_CONTAINER_ID", ""),
@@ -69,6 +106,7 @@ def setup_s3():
         s3_bucket = os.environ.get("NEST_OUTPUT_BUCKET", "va-databricks-learn-1")
         print("Using S3: ", s3_bucket)
         s3 = S3Wrapper({"bucket": s3_bucket})
+        FeatureBroker.register("Bucket", s3_bucket)
     FeatureBroker.register("S3", s3)
 
 
@@ -209,9 +247,6 @@ def update_environment():
         nothing
     """
     print("Initializing environment")
+    setup_is_databricks()
     setup_s3()
-    # setup_sns()
-    # # needed to lookup catalog & sub catalog for a bearing designation
-    # setup_bearing_db()
-    # setup_sqs()
-    # setup_download_analytics_sqs()
+    configure_spark_for_s3()

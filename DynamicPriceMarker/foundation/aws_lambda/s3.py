@@ -504,8 +504,8 @@ class S3Wrapper:
         bucket = self.s3_resource.Bucket(self.bucket_name)
         if not folder_name.endswith('/'):
             folder_name += '/'
-        bucket.put_object(Bucket=bucket, Key=folder_name)
-        print(f"Created prefix: {folder_name} in {bucket}")
+        self.s3_resource.Object(self.bucket_name, folder_name).put()
+        print(f"Created prefix: {folder_name} in {self.bucket_name}")
 
 if __name__ == "__main__":
     # wrapper = S3Wrapper({"bucket": "test-bucket-edwin-s3"})
