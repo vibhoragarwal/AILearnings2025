@@ -35,10 +35,16 @@ gold_df = silver_df.join(my_shop_df, on="item_name", how="inner") \
     .withColumn("price_gap", F.round((F.col("my_price") - F.col("competitor_price")), 2)) \
     .withColumn("action", F.when(F.col("price_gap") > 0.50, "DROP PRICE")
                 .when(F.col("price_gap") < -0.20, "RAISE PRICE")
-                .otherwise("KEEP PRICE"))
+                .otherwise("KEEP PRICE")) \
+    .withColumn("decision_timestamp", F.current_timestamp()) # Added this line
 
 # 5. Save to Gold
-gold_df.write.format("delta").mode("overwrite").save(FeatureBroker.gold_pricing_decisions_path)
+gold_df.write.format("delta").mode("overwrite").option("mergeSchema", "true").save(FeatureBroker.gold_pricing_decisions_path)
 
 print("--- GOLD LAYER: PRICING DECISIONS ---")
-gold_df.show()
+
+if FeatureBroker.DataBricks:
+    print("Running in Databricks")
+    display(gold_df)
+else:
+    gold_df.show()  # Local version
