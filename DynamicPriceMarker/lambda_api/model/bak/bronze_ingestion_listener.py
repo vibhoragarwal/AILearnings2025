@@ -1,8 +1,3 @@
-from pyspark.sql.types import StructType, StructField, StringType, DoubleType
-
-from pyspark.sql import SparkSession
-from delta import configure_spark_with_delta_pip
-
 from DynamicPriceMarker.config.s3 import create_s3_folder, BUCKET_NAME
 from DynamicPriceMarker.config.utils import get_spark, get_market_schema
 
@@ -10,10 +5,9 @@ S3_BUCKET = f"s3a://{BUCKET_NAME}"
 
 # Define S3 Paths
 # Notice we use 's3a://' instead of 'os.path.join' for local folders
-input_path      = f"{S3_BUCKET}/ingestion/raw_market_alerts/"
+input_path = f"{S3_BUCKET}/ingestion/raw_market_alerts/"
 bronze_checkpoint_path = f"{S3_BUCKET}/ingestion/checkpoints/bronze/"
-bronze_market_history      = f"{S3_BUCKET}/ingestion/bronze_market_history/"
-
+bronze_market_history = f"{S3_BUCKET}/ingestion/bronze_market_history/"
 
 # Usage
 create_s3_folder(BUCKET_NAME, "ingestion/raw_market_alerts/")
@@ -52,9 +46,8 @@ query = raw_stream.writeStream \
     .format("delta") \
     .option("checkpointLocation", bronze_checkpoint_path) \
     .outputMode("append") \
-    .trigger(processingTime='5 seconds') \
+    .trigger(processingTime='25 seconds') \
     .start(bronze_market_history)
-
 
 print(f"Stream started! Drop JSON files into {input_path} to see the magic...")
 

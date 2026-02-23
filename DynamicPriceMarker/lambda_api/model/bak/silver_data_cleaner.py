@@ -1,51 +1,45 @@
-import os
-from pyspark.sql.types import StructType, StructField, StringType, DoubleType
 from delta.tables import DeltaTable
-from pyspark.sql import SparkSession
-from delta import configure_spark_with_delta_pip
-
 from pyspark.sql import functions as F
 
+from DynamicPriceMarker.config.s3 import BUCKET_NAME, create_s3_folder
+from DynamicPriceMarker.config.utils import get_spark, get_market_schema
 
-BASE_FOLDER = "../ingestion"
+#
+#
+# BASE_FOLDER = "../ingestion"
+#
+# # 1. Define Silver Path
+# bronze_path = os.path.join(BASE_FOLDER, "bronze_market_history")
+# silver_path = os.path.join(BASE_FOLDER, "silver_market_prices")
+# silver_checkpoint = os.path.join(BASE_FOLDER, "checkpoints", "silver")
+#
+# # Create folders if they don't exist
+# for p in [silver_path, silver_checkpoint]:
+#     os.makedirs(p, exist_ok=True)
 
-# 1. Define Silver Path
-bronze_path = os.path.join(BASE_FOLDER, "bronze_market_history")
-silver_path = os.path.join(BASE_FOLDER, "silver_market_prices")
-silver_checkpoint = os.path.join(BASE_FOLDER, "checkpoints", "silver")
 
-# Create folders if they don't exist
-for p in [silver_path, silver_checkpoint]:
-    os.makedirs(p, exist_ok=True)
+S3_BUCKET = f"s3a://{BUCKET_NAME}"
 
+silver_path = f"{S3_BUCKET}/ingestion/silver_market_prices/"
+silver_checkpoint = f"{S3_BUCKET}/ingestion/checkpoints/silver"
 
+# Usage
+create_s3_folder(BUCKET_NAME, "ingestion/silver_market_prices/")
+create_s3_folder(BUCKET_NAME, "ingestion/checkpoints/silver")
 
-# 1. Setup the Builder
-builder = SparkSession.builder \
-    .appName("StableDelta") \
-    .master("local[*]") \
-    .config("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension") \
-    .config("spark.sql.catalog.spark_catalog", "org.apache.spark.sql.delta.catalog.DeltaCatalog") \
-    .config("spark.sql.warehouse.dir", "spark-warehouse")
+# Define S3 Paths
+# Notice we use 's3a://' instead of 'os.path.join' for local folders
 
-# Define the schema for incoming market alerts
-market_schema = StructType([
-    StructField("item_name", StringType(), False),
-    StructField("competitor_name", StringType(), False),
-    StructField("competitor_price", DoubleType(), False),
-    StructField("timestamp", StringType(), False)
-])
-
-spark = configure_spark_with_delta_pip(builder).getOrCreate()
 # 2. Create the Silver Table if it doesn't exist
 # We need an empty table to "Merge" into the first time
+spark = get_spark()
+market_schema = get_market_schema()
 if not DeltaTable.isDeltaTable(spark, silver_path):
     spark.createDataFrame([], market_schema).write.format("delta").save(silver_path)
 
 
 # 3. The Upsert Function
 def upsert_to_silver(batch_df, batch_id):
-
     print(f"processing batch {batch_id}")
 
     # 1. CLEANING & CONFORMING (Standardization)
@@ -64,7 +58,6 @@ def upsert_to_silver(batch_df, batch_id):
 
     # This function runs for every micro-batch
     silver_table = DeltaTable.forPath(spark, silver_path)
-
 
     """Bronze is the Ledger: It records every single transaction. If you spend $10 at Starbucks 5 times, there are 5 lines in the ledger.
 
@@ -101,10 +94,12 @@ In Bronze, one source might send "Milk" and another might send "milk ". In Silve
     silver_df.orderBy("item_name").show()
 
 
-print(f"Starting Silver Stream reading from: {bronze_path}")
+bronze_market_history = f"{S3_BUCKET}/ingestion/bronze_market_history/"
+
+print(f"Starting Silver Stream reading from: {bronze_market_history}")
 # 4. Start the Stream from Bronze to Silver
 # We read FROM the Bronze Delta path
-bronze_stream = spark.readStream.format("delta").load(bronze_path)
+bronze_stream = spark.readStream.format("delta").load(bronze_market_history)
 
 silver_query = bronze_stream.writeStream \
     .foreachBatch(upsert_to_silver) \

@@ -1,0 +1,108 @@
+{
+    "input": {
+        "designation": "1205 ETN9",
+        "calculate": ["safetyfactor"],
+        "loadcycles": [
+            {
+                "name": "LC1",
+                "axialForce": 0.0,
+                "radialForce": 1787.5,
+                "rotationalSpeed": 2700.0
+            }
+        ]
+    },
+    "options": {
+        "defaults": {
+            "rotatingRing": "innerRing",
+            "lubricationType": "grease",
+            "lubricationMethod": "grease",
+            "viscosityMethod": "skfGrease",
+            "kinematicViscosityAt40degC": 110.0,
+            "kinematicViscosityAt100degC": 11.0,
+            "lubricantName": "LGMT2",
+            "contaminationMethod": "recommended",
+            "contaminationIsoGrease": "normalCleanliness",
+            "contaminationFactor": 0.0,
+            "isLubricantWithEffectiveEP": false,
+            "isLubricantWithEffectiveEPBelowEtaC_0_2": false,
+            "innerRingTemperature": 70,
+            "outerRingTemperature": 65,
+            "oilBathLevel": 0.0,
+            "shaftOrientation": "horizontal",
+            "lifeAdjustmentFactor_a1": 1.0
+        },
+        "calculations": [
+            "minimumload",
+            "viscosity",
+            "eqdynload",
+            "frequencies",
+            "greaseliferelubeinterval",
+            "friction",
+            "ratinglife",
+            "adjrefspeed",
+            "safetyfactor",
+            "fittolerance"
+        ],
+        "required": {
+            "visibleInputFields": ["radialForce", "axialForce"],
+            "visibleInputCategories": ["radialForce", "axialForce"]
+        },
+        "ranges": {}
+    },
+    "units": "internal",
+    "results": {
+        "calculated": [
+            {
+                "bearing": {
+                    "designation": "1205 ETN9",
+                    "catalogueType": "SABB",
+                    "innerDiameter": 25,
+                    "outerDiameter": 52,
+                    "referenceSpeed": 28000,
+                    "fatigueLoadLimit": 210,
+                    "limitingSpeed": 18000,
+                    "staticLoadRating": 4000,
+                    "dynamicLoadRating": 14300,
+                    "width": 15,
+                    "explorer": 0,
+                    "popularItem": 1.0,
+                    "representation": "SABB"
+                },
+                "safetyfactor": {
+                    "safetyFactor": 2.24,
+                    "equivalentStaticLoad": 1788
+                }
+            }
+        ],
+        "bearing": {
+            "designation": "1205 ETN9",
+            "catalogueType": "SABB",
+            "innerDiameter": 25,
+            "outerDiameter": 52,
+            "referenceSpeed": 28000,
+            "fatigueLoadLimit": 210,
+            "limitingSpeed": 18000,
+            "staticLoadRating": 4000,
+            "dynamicLoadRating": 14300,
+            "width": 15,
+            "explorer": 0,
+            "popularItem": 1.0,
+            "representation": "SABB"
+        },
+        "calculations": ["safetyfactor"],
+        "visibleOutputParameters": [
+            "innerDiameter",
+            "outerDiameter",
+            "designation",
+            "width",
+            "dynamicLoadRating",
+            "staticLoadRating",
+            "fatigueLoadLimit"
+        ]
+    },
+    "userId": "test",
+    "retention": 14,
+    "versionModel": 1,
+    "links": [],
+    "version": "0.0.1"
+}
