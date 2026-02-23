@@ -1,9 +1,9 @@
 from delta import DeltaTable
 from pyspark.sql import functions as F
 
-from DynamicPriceMarker.config.spark_config import get_market_schema, get_spark
 from foundation.utils.featurebroker import FeatureBroker
-from init_structures import init_table_structures
+from lambda_api.model.init_structures import init_table_structures
+from lambda_api.model.model_config import get_spark, get_market_schema
 
 from lambda_api.setup_env import update_environment
 update_environment()

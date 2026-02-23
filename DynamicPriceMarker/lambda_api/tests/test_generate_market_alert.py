@@ -45,8 +45,8 @@ def generate_local_alert(item, comp, price):
 
 
 # Simulate a few alerts
-generate_alert("Milk", "Market_A", 2.11)
+generate_alert("Milk", "Market_A", 4.11)
 time.sleep(2)
-generate_alert("Bread", "Market_B", 3.19)
+generate_alert("Bread", "Market_B", 2.5)
 time.sleep(2)
 generate_alert("Butter", "Market_A", 43.19)

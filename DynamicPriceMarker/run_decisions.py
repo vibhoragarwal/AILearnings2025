@@ -9,10 +9,11 @@ Silver must be a stream because it needs to catch every alert immediately.
 Gold is for business decisions. You don't want your store prices flickering every second. You usually run the Gold code on a schedule (e.g., every hour or every morning) to generate a "Fresh Report."
 """
 
+
+from lambda_api.model.model_config import get_spark
 from lambda_api.setup_env import update_environment
 update_environment()
 from pyspark.sql import functions as F
-from config.spark_config import get_spark
 from foundation.utils.featurebroker import FeatureBroker
 
 spark = get_spark()
